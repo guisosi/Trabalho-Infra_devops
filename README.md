@@ -26,6 +26,7 @@
 | Hospedagem | VPS único (Linux + Docker) |
 | Integrantes | [@guisosi](https://github.com/guisosi) · [@limadev27](https://github.com/limadev27) |
 
+<!-- Curso / Professor: preencher se o trabalho exigir -->
 
 ---
 
@@ -315,17 +316,24 @@ curl -I https://tamoai.tech
 Pontos conhecidos, declarados abertamente:
 
 - **VPS único, sem alta disponibilidade.** Se o host cai, tudo cai — não há failover nem réplica.
-- **Datasource do Loki não provisionado.** Só o Prometheus é provisionado automaticamente no
-  Grafana; o Loki precisa ser adicionado manualmente ou incluído no `grafana-datasources.yaml`.
-- **Sem backup automatizado dos volumes** no repositório (`nimbus-data`, `grafana_data`,
-  `prometheus_data`, `loki_data`, `kuma-data`, dados do CrowdSec). Recomendado configurar.
+- **Backup via Hostinger.** A VPS tem snapshot (ponto-no-tempo) e backup automático semanal,
+  cobrindo recuperação completa do host em caso de perda. O que **ainda não existe** é backup
+  granular por volume Docker (`grafana_data`, `prometheus_data`, `loki_data`, `kuma-data`, dados
+  do CrowdSec) — restaurar um serviço isolado hoje exige recuperar o servidor inteiro a partir do
+  snapshot.
+- **Grafana configurado pela interface, não como código.** O datasource do Loki e os dashboards
+  foram criados direto na UI (persistem no volume `grafana_data` e no backup do host) e funcionam
+  normalmente. Só o datasource do Prometheus está provisionado por arquivo
+  (`grafana-datasources.yaml`). Provisionar também o Loki e exportar os dashboards para JSON
+  versionado deixaria o Grafana reproduzível do zero a partir do repositório.
 - **Segredos em `.env` texto puro.** Fora do git (correto), mas sem cofre (Vault/SOPS) — melhoria
   futura para rotação e auditoria.
 - **CI/CD mora no repo da aplicação.** Este repositório é de *deploy*; o build e o push das
   imagens acontecem no [repo do app](https://github.com/limadev27/DevOps-Computa-o-em-Nuvem).
 
-**Próximos passos sugeridos:** provisionar o Loki no Grafana, automatizar backup dos volumes,
-e adicionar alertas (Alertmanager ou alertas nativos do Grafana) sobre as métricas já coletadas.
+**Próximos passos sugeridos:** provisionar o Loki e os dashboards como código (IaC), adicionar
+backup granular por volume (complementando o snapshot do host), e configurar alertas (Alertmanager
+ou alertas nativos do Grafana) sobre as métricas já coletadas.
 
 ---
 
