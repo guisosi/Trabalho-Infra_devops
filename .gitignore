@@ -1,0 +1,17 @@
+# runtime / dados — nunca versionar
+**/data/
+
+# segredos
+**/.env
+**/.env.*
+**/*.key
+**/*.pem
+
+# certificados (o Caddy regenera sozinho)
+**/*.crt
+
+# base grande e licenciada
+**/*.mmdb
+
+# backups
+*.bak-*

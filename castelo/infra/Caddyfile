@@ -1,0 +1,63 @@
+{
+    acme_ca https://acme-v02.api.letsencrypt.org/directory
+
+    servers {
+        protocols h1 h2
+    }
+
+    order crowdsec first
+    crowdsec {
+        api_url http://crowdsec:8080
+        api_key {env.CROWDSEC_API_KEY}
+    }
+}
+
+tamoai.tech {
+    crowdsec
+    encode zstd gzip
+    log {
+        output stdout
+        format json
+    }
+    reverse_proxy site:80
+}
+
+www.tamoai.tech {
+    redir https://tamoai.tech{uri} permanent
+}
+
+uptime.tamoai.tech {
+    @allowed remote_ip 187.6.80.96 181.220.199.15
+    handle @allowed {
+        reverse_proxy uptime-kuma:3001
+    }
+    handle {
+        respond "Forbidden" 403
+    }
+}
+
+*.tamoai.tech {
+    tls {
+        dns hostinger {env.HOSTINGER_API_TOKEN}
+        dns_ttl 300s
+    }
+
+    @bloqueado not remote_ip 144.22.181.189
+    handle @bloqueado {
+        respond "403 - acesso restrito" 403
+    }
+
+    @metrics host metrics.tamoai.tech
+    handle @metrics {
+        reverse_proxy grafana:3000
+    }
+
+    @prometheus host prometheus.tamoai.tech
+    handle @prometheus {
+        reverse_proxy prometheus:9090
+    }
+
+    handle {
+        respond "404" 404
+    }
+}

@@ -1,0 +1,43 @@
+server:
+  http_listen_port: 9080
+  grpc_listen_port: 0
+
+positions:
+  filename: /tmp/positions.yaml
+
+clients:
+  - url: http://loki:3100/loki/api/v1/push
+
+scrape_configs:
+  - job_name: containers
+    docker_sd_configs:
+      - host: unix:///var/run/docker.sock
+        refresh_interval: 5s
+    relabel_configs:
+      - source_labels: ['__meta_docker_container_name']
+        regex: '/(.*)'
+        target_label: container
+      - source_labels: ['__meta_docker_container_log_stream']
+        target_label: stream
+    pipeline_stages:
+      # Só os logs do Caddy (JSON de acesso) recebem o enriquecimento GeoIP.
+      # Os demais containers passam direto, sem alteração.
+      - match:
+          selector: '{container="castelo-caddy-1"}'
+          stages:
+            - json:
+                expressions:
+                  client_ip: request.client_ip
+            - geoip:
+                db: /geoip/GeoLite2-City.mmdb      # banco reaproveitado do CrowdSec
+                db_type: city
+                source: client_ip
+            # país é baixa cardinalidade -> pode virar label
+            - labels:
+                geoip_country_name:
+                geoip_country_code:
+            # lat/long/cidade são alta cardinalidade -> metadados (Loki 3.x), NUNCA labels
+            - structured_metadata:
+                geoip_location_latitude:
+                geoip_location_longitude:
+                geoip_city_name:

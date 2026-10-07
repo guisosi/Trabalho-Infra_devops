@@ -1,0 +1,26 @@
+services:
+  uptime-kuma:
+    image: louislam/uptime-kuma:1
+    container_name: uptime-kuma
+    restart: unless-stopped
+    volumes:
+      - kuma-data:/app/data
+    security_opt:
+      - no-new-privileges:true
+    logging:
+      driver: json-file
+      options: { max-size: "10m", max-file: "3" }
+    networks:
+      - web
+      - edge
+
+volumes:
+  kuma-data:
+
+networks:
+  web:
+    external: true
+    name: castelo_web
+  edge:
+    external: true
+    name: castelo_edge

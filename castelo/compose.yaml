@@ -1,0 +1,79 @@
+name: castelo
+
+services:
+  site:
+    image: ghcr.io/limadev27/meu-site:latest
+    restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
+    networks:
+      - web
+    healthcheck:
+      test: ["CMD", "wget", "-q", "--spider", "http://127.0.0.1/"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  backend:
+    image: ghcr.io/limadev27/meu-site-backend:latest
+    restart: unless-stopped
+    environment:
+      - JWT_SECRET=${JWT_SECRET:?defina no .env}
+      - PORT=3000
+    volumes:
+      - nimbus-data:/app/data
+    security_opt:
+      - no-new-privileges:true
+    networks:
+      - web
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  caddy:
+    image: ${CADDY_IMAGE:?Defina CADDY_IMAGE no arquivo .env}
+    pull_policy: never
+    restart: unless-stopped
+    depends_on:
+      site:
+        condition: service_healthy
+    security_opt:
+      - no-new-privileges:true
+    environment:                                      
+      - HOSTINGER_API_TOKEN=${HOSTINGER_API_TOKEN:?defina no .env}
+      - CROWDSEC_API_KEY=${CROWDSEC_API_KEY:?defina no .env}
+    ports:
+      - "0.0.0.0:80:80/tcp"
+      - "0.0.0.0:443:443/tcp"
+    volumes:
+      - ./infra/Caddyfile:/etc/caddy/Caddyfile:ro
+      - ./data/caddy:/data
+      - ./data/caddy-config:/config
+    networks:
+      - web
+      - edge
+      - obs
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+networks:
+  web:
+    internal: true
+  edge:
+    driver: bridge
+  obs:
+    external: true
+
+volumes:
+  nimbus-data:
